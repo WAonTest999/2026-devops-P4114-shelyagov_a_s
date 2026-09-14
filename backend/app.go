@@ -70,9 +70,9 @@ func (a *App) routes() http.Handler {
 		}
 		write(w, 200, map[string]string{"status": "ready"})
 	})
-	m.HandleFunc("POST /api/register", a.register)
-	m.HandleFunc("POST /api/login", a.login)
-	m.HandleFunc("POST /api/logout", a.logout)
+	// m.HandleFunc("POST /api/register", a.register)
+	// m.HandleFunc("POST /api/login", a.login)
+	// m.HandleFunc("POST /api/logout", a.logout)
 	m.HandleFunc("GET /api/me", a.me)
 	m.HandleFunc("GET /api/events", a.events)
 	m.HandleFunc("POST /api/events", a.createEvent)
