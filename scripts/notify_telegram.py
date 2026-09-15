@@ -24,7 +24,7 @@ def main():
         page += 1
     lines = [f"CI · {os.environ['REPOSITORY']}"]
     lines.extend(f"{job['name']}: {job.get('conclusion') or job['status']}" for job in jobs)
-    lines.extend(['Argo CD: статус фактического развёртывания отправляется отдельно.', os.environ['RUN_URL']])
+    lines.extend(['(ᗜˬᗜ)', os.environ['RUN_URL']])
     body = json.dumps({'chat_id': os.environ['TELEGRAM_CHAT_ID'], 'text': '\n'.join(lines)[:4000]}).encode()
     request = urllib.request.Request(f"https://api.telegram.org/bot{os.environ['TELEGRAM_BOT_TOKEN']}/sendMessage", data=body, headers={'Content-Type': 'application/json'})
     try:
