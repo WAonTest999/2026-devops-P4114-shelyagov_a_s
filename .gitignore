@@ -17,3 +17,5 @@ secrets.yaml
 kubeconfig*
 __pycache__/
 test-results/
+.prettierrc.json
+.prettierignore
