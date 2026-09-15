@@ -1,10 +1,10 @@
 name: CI
 on:
   push:
-    branches: [lab1-preview]
+    branches: [main]
     paths-ignore: ['deploy/app/kustomization.yaml', 'docs/**', '**.md']
   pull_request:
-    branches: [lab1-preview]
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
@@ -31,7 +31,7 @@ jobs:
           {
             POSTGRES_DB: school_test,
             POSTGRES_USER: postgres,
-            POSTGRES_PASSWORD: test-pwd-skibidi
+            POSTGRES_PASSWORD: test-only-password
           }
         ports: ['5432:5432']
         options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
@@ -42,7 +42,7 @@ jobs:
       - name: Unit and PostgreSQL concurrency tests
         working-directory: backend
         env:
-          TEST_DATABASE_URL: postgres://postgres:test-pwd-skibidi@localhost:5432/school_test?sslmode=disable
+          TEST_DATABASE_URL: postgres://postgres:test-only-password@localhost:5432/school_test?sslmode=disable
         run: go test -race -coverprofile=coverage.out ./...
       - name: Require at least 80 percent backend coverage
         run: python3 scripts/check_go_coverage.py backend/coverage.out
@@ -70,4 +70,81 @@ jobs:
         working-directory: frontend
       - uses: actions/upload-artifact@v4
         with: { name: frontend-coverage, path: frontend/coverage/lcov.info }
-  
+  sonar:
+    if: vars.LAB_STAGE == '4' && github.event_name != 'pull_request'
+    needs: [backend-build, backend-test, frontend-build, frontend-test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/download-artifact@v4
+        with: { name: backend-coverage, path: backend }
+      - uses: actions/download-artifact@v4
+        with: { name: frontend-coverage, path: frontend/coverage }
+      - name: Verify SonarQube settings
+        env:
+          {
+            SONAR_TOKEN: '${{ secrets.SONAR_TOKEN }}',
+            SONAR_HOST_URL: '${{ vars.SONAR_HOST_URL }}'
+          }
+        run: test -n "$SONAR_TOKEN" && test -n "$SONAR_HOST_URL"
+      - uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+        with:
+          args: -Dsonar.qualitygate.wait=true -Dsonar.qualitygate.timeout=600
+  publish-images:
+    if: >-
+      always() && !cancelled() && github.ref == 'refs/heads/main' &&
+      github.event_name != 'pull_request' && contains(fromJSON('["2","3","4"]'), vars.LAB_STAGE) &&
+      needs.backend-build.result == 'success' && needs.backend-test.result == 'success' &&
+      needs.frontend-build.result == 'success' && needs.frontend-test.result == 'success' &&
+      (vars.LAB_STAGE != '4' || needs.sonar.result == 'success')
+    needs: [backend-build, backend-test, frontend-build, frontend-test, sonar]
+    runs-on: ubuntu-latest
+    permissions: { contents: read, packages: write }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          {
+            registry: ghcr.io,
+            username: '${{ github.actor }}',
+            password: '${{ secrets.GITHUB_TOKEN }}'
+          }
+      - name: Lowercase image owner
+        run: echo "IMAGE_OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
+      - uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: true
+          tags: |
+            ghcr.io/${{ env.IMAGE_OWNER }}/music-school-backend:${{ github.sha }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/music-school-backend:latest
+      - uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          push: true
+          tags: |
+            ghcr.io/${{ env.IMAGE_OWNER }}/music-school-frontend:${{ github.sha }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/music-school-frontend:latest
+  update-deployment:
+    if: vars.LAB_STAGE == '4' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: publish-images
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 0 }
+      - name: Commit tested immutable image tags for Argo CD
+        env: { IMAGE_TAG: '${{ github.sha }}' }
+        run: |
+          python3 scripts/set_image_tag.py "$IMAGE_TAG"
+          git config user.name github-actions[bot]
+          git config user.email github-actions[bot]@users.noreply.github.com
+          git add deploy/app/kustomization.yaml
+          git diff --cached --quiet && exit 0
+          git commit -m "Deploy tested images $IMAGE_TAG [skip ci]"
+          git push origin HEAD:main
