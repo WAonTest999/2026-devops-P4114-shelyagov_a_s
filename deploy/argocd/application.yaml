@@ -6,9 +6,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/CHANGE_ME_OWNER/CHANGE_ME_REPO.git
+    repoURL: https://github.com/WAonTest999/2026-devops-P4114-shelyagov_a_s.git
     targetRevision: main
-    path: deploy/app
+    path: deploy/no-domain
   destination:
     server: https://kubernetes.default.svc
     namespace: school

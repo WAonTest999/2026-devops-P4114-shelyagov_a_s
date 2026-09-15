@@ -7,8 +7,8 @@ resources:
   - ingress.yaml
 images:
   - name: school-backend
-    newName: ghcr.io/CHANGE_ME/music-school-backend
+    newName: ghcr.io/waontest999/music-school-backend
     newTag: latest
   - name: school-frontend
-    newName: ghcr.io/CHANGE_ME/music-school-frontend
+    newName: ghcr.io/waontest999/music-school-frontend
     newTag: latest
