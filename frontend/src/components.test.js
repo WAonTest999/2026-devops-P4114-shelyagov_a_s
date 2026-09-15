@@ -1,6 +1,6 @@
 import { beforeEach, afterEach, expect, it, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
-import { api } from './api'
+import { api } from './api.js'
 import App from './App.vue'
 import AuthForm from './AuthForm.vue'
 import Concerts from './Concerts.vue'

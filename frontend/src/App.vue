@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { api } from './api'
-import { pages } from './pages'
+import { api } from './api.js'
+import { pages } from './pages.js'
 import AuthForm from './AuthForm.vue'
 import Concerts from './Concerts.vue'
 const page = ref('О школе'),

@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { api } from './api'
-import { seatLabel } from './pages'
+import { api } from './api.js'
+import { seatLabel } from './pages.js'
 import EventAdmin from './EventAdmin.vue'
 const props = defineProps({ user: { type: Object, default: null } })
 const events = ref([]),
