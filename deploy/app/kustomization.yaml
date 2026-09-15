@@ -8,7 +8,7 @@ resources:
 images:
   - name: school-backend
     newName: ghcr.io/waontest999/music-school-backend
-    newTag: b391ec3e15337d934d94978c505979009b78f86b
+    newTag: 505c0b8384d4af4e66576a1343b88c2d64e71864
   - name: school-frontend
     newName: ghcr.io/waontest999/music-school-frontend
-    newTag: b391ec3e15337d934d94978c505979009b78f86b
+    newTag: 505c0b8384d4af4e66576a1343b88c2d64e71864
