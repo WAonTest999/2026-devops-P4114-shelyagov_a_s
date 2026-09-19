@@ -1,10 +1,10 @@
 name: CI
 on:
   push:
-    branches: [main]
+    branches: [lab1-preview]
     paths-ignore: ['deploy/app/kustomization.yaml', 'docs/**', '**.md']
   pull_request:
-    branches: [main]
+    branches: [lab1-preview]
   workflow_dispatch:
 permissions:
   contents: read
@@ -23,6 +23,7 @@ jobs:
       - run: go vet ./...
         working-directory: backend
   backend-test:
+    needs: backend-build
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -48,8 +49,8 @@ jobs:
         run: python3 scripts/check_go_coverage.py backend/coverage.out
       - uses: actions/upload-artifact@v4
         with: { name: backend-coverage, path: backend/coverage.out }
-        needs: [backend-build]
   frontend-build:
+    needs: backend-test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -59,8 +60,8 @@ jobs:
         working-directory: frontend
       - run: npm run build
         working-directory: frontend
-        needs: [backend-test]
   frontend-test:
+    needs: frontend-build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -72,4 +73,3 @@ jobs:
         working-directory: frontend
       - uses: actions/upload-artifact@v4
         with: { name: frontend-coverage, path: frontend/coverage/lcov.info }
-        needs: [frontend-build]
