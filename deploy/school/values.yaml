@@ -1,0 +1,12 @@
+backend:
+  repository: ghcr.io/waontest999/music-school-backend
+  tag: b391ec3e15337d934d94978c505979009b78f86b
+frontend:
+  repository: ghcr.io/waontest999/music-school-frontend
+  tag: b391ec3e15337d934d94978c505979009b78f86b
+cookieSecure: false
+ingress:
+  enabled: false
+  className: traefik
+  clusterIssuer: letsencrypt
+  host: school.example.org

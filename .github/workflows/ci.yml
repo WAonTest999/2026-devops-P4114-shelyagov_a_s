@@ -2,7 +2,7 @@ name: CI
 on:
   push:
     branches: [main]
-    paths-ignore: ['deploy/app/kustomization.yaml', 'docs/**', '**.md']
+    paths-ignore: ['deploy/school/values.yaml', 'docs/**', '**.md']
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -23,6 +23,7 @@ jobs:
       - run: go vet ./...
         working-directory: backend
   backend-test:
+    needs: backend-build
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -49,6 +50,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with: { name: backend-coverage, path: backend/coverage.out }
   frontend-build:
+    needs: backend-test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -59,6 +61,7 @@ jobs:
       - run: npm run build
         working-directory: frontend
   frontend-test:
+    needs: frontend-build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -71,8 +74,8 @@ jobs:
       - uses: actions/upload-artifact@v4
         with: { name: frontend-coverage, path: frontend/coverage/lcov.info }
   sonar:
-    if: vars.LAB_STAGE == '4' && github.event_name != 'pull_request'
-    needs: [backend-build, backend-test, frontend-build, frontend-test]
+    if: github.event_name != 'pull_request'
+    needs: frontend-test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -95,13 +98,8 @@ jobs:
         with:
           args: -Dsonar.qualitygate.wait=true -Dsonar.qualitygate.timeout=600
   publish-images:
-    if: >-
-      always() && !cancelled() && github.ref == 'refs/heads/main' &&
-      github.event_name != 'pull_request' && contains(fromJSON('["2","3","4"]'), vars.LAB_STAGE) &&
-      needs.backend-build.result == 'success' && needs.backend-test.result == 'success' &&
-      needs.frontend-build.result == 'success' && needs.frontend-test.result == 'success' &&
-      (vars.LAB_STAGE != '4' || needs.sonar.result == 'success')
-    needs: [backend-build, backend-test, frontend-build, frontend-test, sonar]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: sonar
     runs-on: ubuntu-latest
     permissions: { contents: read, packages: write }
     steps:
@@ -131,7 +129,7 @@ jobs:
             ghcr.io/${{ env.IMAGE_OWNER }}/music-school-frontend:${{ github.sha }}
             ghcr.io/${{ env.IMAGE_OWNER }}/music-school-frontend:latest
   update-deployment:
-    if: vars.LAB_STAGE == '4' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     needs: publish-images
     runs-on: ubuntu-latest
     permissions: { contents: write }
@@ -144,7 +142,7 @@ jobs:
           python3 scripts/set_image_tag.py "$IMAGE_TAG"
           git config user.name github-actions[bot]
           git config user.email github-actions[bot]@users.noreply.github.com
-          git add deploy/app/kustomization.yaml
+          git add deploy/school/values.yaml
           git diff --cached --quiet && exit 0
           git commit -m "Deploy tested images $IMAGE_TAG [skip ci]"
           git push origin HEAD:main

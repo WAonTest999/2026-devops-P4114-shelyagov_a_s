@@ -1,18 +1,20 @@
+{{- if .Values.ingress.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: school
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt
+    cert-manager.io/cluster-issuer: {{ .Values.ingress.clusterIssuer }}
 spec:
-  ingressClassName: traefik
+  ingressClassName: {{ .Values.ingress.className }}
   tls:
-    - hosts: [school.CHANGE_ME]
+    - hosts: [{{ .Values.ingress.host | quote }}]
       secretName: school-tls
   rules:
-    - host: school.CHANGE_ME
+    - host: {{ .Values.ingress.host | quote }}
       http:
         paths:
           - path: /
             pathType: Prefix
             backend: { service: { name: frontend, port: { number: 80 } } }
+{{- end }}

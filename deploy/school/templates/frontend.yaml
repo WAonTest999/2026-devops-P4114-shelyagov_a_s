@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: frontend }
+  template:
+    metadata:
+      labels: { app: frontend }
+    spec:
+      securityContext: { runAsNonRoot: true, runAsUser: 101, fsGroup: 101 }
+      containers:
+        - name: frontend
+          image: {{ .Values.frontend.repository }}:{{ .Values.frontend.tag }}
+          ports: [{ name: http, containerPort: 8080 }]
+          resources:
+            requests: { cpu: 100m, memory: 64Mi }
+            limits: { cpu: 500m, memory: 128Mi }
+          readinessProbe: { httpGet: { path: /, port: http } }
+          securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: frontend }
+spec:
+  selector: { app: frontend }
+  ports: [{ name: http, port: 80, targetPort: http }]

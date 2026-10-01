@@ -8,7 +8,9 @@ spec:
   source:
     repoURL: https://github.com/WAonTest999/2026-devops-P4114-shelyagov_a_s.git
     targetRevision: main
-    path: deploy/no-domain
+    path: deploy/school
+    helm:
+      valueFiles: [values.yaml]
   destination:
     server: https://kubernetes.default.svc
     namespace: school
