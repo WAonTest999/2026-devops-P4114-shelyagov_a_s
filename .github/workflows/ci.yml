@@ -88,13 +88,13 @@ jobs:
         env:
           {
             SONAR_TOKEN: '${{ secrets.SONAR_TOKEN }}',
-            SONAR_HOST_URL: '${{ vars.SONAR_HOST_URL }}'
+            SONAR_HOST_URL: 'http://84.252.131.166:9000'
           }
         run: test -n "$SONAR_TOKEN" && test -n "$SONAR_HOST_URL"
       - uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+          SONAR_HOST_URL: http://84.252.131.166:9000
         with:
           args: -Dsonar.qualitygate.wait=true -Dsonar.qualitygate.timeout=600
   publish-images:
